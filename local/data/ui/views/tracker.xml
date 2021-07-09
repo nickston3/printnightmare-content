@@ -1,0 +1,182 @@
+<form version="1.1">
+  <label>PrinterNightmare Host Tracker</label>
+  <description>CVE-202134527</description>
+  <fieldset submitButton="false">
+    <input type="time" token="field1">
+      <label></label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Total Windows Hosts in Active Directory</title>
+      <single>
+        <search>
+          <query>| inputlookup dpie_admon_assets.csv | stats count</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Hosts Reporting Required Data</title>
+      <table>
+        <search>
+          <query>| tstats dc(host) as count WHERE source IN ("service", "*EventLog:Microsoft-Windows-Sysmon/Operational","*EventLog:Microsoft-Windows-PrintService/Admin","*EventLog:Microsoft-Windows-PrintService/Operational") OR sourcetype IN ("WindowsUpdateLog", "WinHostMon") by sourcetype,source</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Hosts with Running Printer Spool Service</title>
+      <single>
+        <search>
+          <query>index=main sourcetype=WinHostMon source=service DisplayName="Print Spooler" State=running | timechart dc(host)</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x53a051","0x555","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[1,70,100,120]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Hosts with Stopped Printer Spool Service</title>
+      <single>
+        <search>
+          <query>index=main sourcetype=WinHostMon source=service DisplayName="Print Spooler" State=stopped | timechart dc(host)</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0xdc4e41","0xf1813f","0xf8be34","0x555","0x53a051"]</option>
+        <option name="rangeValues">[10,30,70,120]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Hosts with Automatic Start of Printer Spool Enabled</title>
+      <single>
+        <search>
+          <query>index=main sourcetype=WinHostMon source=service DisplayName="Print Spooler" StartMode=auto | timechart dc(host)</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x53a051","0x555","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[1,70,100,120]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Hosts with Automatic Start of Printer Spool Disabled</title>
+      <single>
+        <search>
+          <query>index=main sourcetype=WinHostMon source=service DisplayName="Print Spooler" StartMode=disabled | timechart dc(host)</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0xdc4e41","0xf1813f","0xf8be34","0x555","0x53a051"]</option>
+        <option name="rangeValues">[10,30,70,120]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Hosts with Patch Installed (KB5004948)</title>
+      <single>
+        <search>
+          <query>index=windows sourcetype=WindowsUpdateLog package=KB5004948 status=installed | timechart dc(host)</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Hosts Requiring Patch (KB5004948)</title>
+      <single>
+        <search>
+          <query>index=windows sourcetype=WindowsUpdateLog package=KB5004948 status!=installed | timechart dc(host)</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Immediate Action Requried</title>
+      <table>
+        <search>
+          <query>index=main sourcetype=WinHostMon source=service DisplayName="Print Spooler" (StartMode=Auto OR Started=true OR State=Running)
+| stats values(DisplayName) as Disp_Name,values(StartMode) as Start_mode,values(Started) as Started,values(State) as State by host</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <title>No Immediate Action Required by host</title>
+      <table>
+        <search>
+          <query>index=main sourcetype=WinHostMon source=service DisplayName="Print Spooler" (StartMode=Disabled OR Started=false OR State=Stopped)
+| stats values(DisplayName) as Disp_Name,values(StartMode) as Start_mode,values(Started) as Started,values(State) as State by host</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Successful Patch install (KB5004948)</title>
+      <table>
+        <search>
+          <query>index=windows sourcetype=WindowsUpdateLog package=KB5004948 status=installed | stats values(signature_id) as KB, values(signature) AS "Update Name", values(status) AS Status by host</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+</form>
