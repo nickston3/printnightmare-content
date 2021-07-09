@@ -15,7 +15,7 @@
       <title>Total Windows Hosts in Active Directory</title>
       <single>
         <search>
-          <query>| inputlookup dpie_admon_assets.csv | stats count</query>
+          <query>| inputlookup admon_assets.csv | stats count</query>
           <earliest>$field1.earliest$</earliest>
           <latest>$field1.latest$</latest>
           <sampleRatio>1</sampleRatio>
